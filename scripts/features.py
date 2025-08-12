@@ -164,4 +164,59 @@ def run_forecasting(stockData, asset_name,seasonal_order=(1, 1, 1, 12), forecast
     return results
 
 
+def plot_forecasts_vs_actual(results, asset_name,name):
+    # Extract data
+    test_data = results['test_data']
+    arima_forecast = results['arima_forecast']
+    sarima_forecast = results['sarima_forecast']
+    lstm_forecast = results['lstm_forecast']
+    
+   
+
+    # Reset index of the asset data to use Date for x-axis
+    asset_data = asset_name 
+    asset_data = asset_data.reset_index()
+    test_data_dates = asset_data['Date']
+    
+    # Plot the actual and forecast data
+    plt.figure(figsize=(14, 8))
+    
+    # Plotting the actual data ('Adj Close' from the asset data)
+    plt.plot(test_data_dates, asset_data['Adj Close'], label='Actual', color='grey', linestyle='--')
+    forecast_periods = 360
+    if arima_forecast.size > 0:
+        # Generate forecast dates starting from the last date in the test data
+        forecast_dates = pd.date_range(start=test_data_dates.iloc[-1], periods=forecast_periods + 1, freq='D')[1:]
+
+        # Plotting forecast data for each model
+        plt.plot(forecast_dates, arima_forecast, label='ARIMA Forecast', color='skyblue')
+        plt.plot(forecast_dates, sarima_forecast, label='SARIMA Forecast', color='green')
+        plt.plot(forecast_dates, lstm_forecast, label='LSTM Forecast', color='red')
+
+        # Set plot titles and labels
+        plt.title(f'Forecast vs Actual for {name}')
+        plt.xlabel('Date')
+        plt.ylabel('Price')
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+
+
+def summarize_model_performance(results, stockData,name):
+    metrics = results['metrics']
+    
+    print(f"\nSummary of Model Performance for {name}:")
+    for model, metric in metrics.items():
+        mae, rmse, mape = metric
+        print(f"{model} - MAE: {mae:.4f}, RMSE: {rmse:.4f}, MAPE: {mape:.2f}%")
+
+    best_model = min(metrics, key=lambda x: metrics[x][2] if metrics[x][2] is not None else float('inf'))
+    print(f"\nBest Model for {name} based on MAPE: {best_model}\n")
+
+def forecast(stockData, results,name):
+    plot_forecasts_vs_actual(results, stockData,name)   
+    summarize_model_performance(results, stockData,name)
+
         
